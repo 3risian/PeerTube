@@ -3,6 +3,7 @@ import { buildFileLocale, getDefaultLocale, is18nLocale, POSSIBLE_LOCALES } from
 import {
   AVATARS_SIZE,
   CUSTOM_HTML_TAG_COMMENTS,
+  CUSTOM_HTML_PLAYER_COMMENTS,
   EMBED_SIZE,
   PLUGIN_GLOBAL_CSS_PATH,
   WEBSERVER,
@@ -79,9 +80,10 @@ export class ClientHtml {
       return ClientHtml.getIndexHTML(req, res)
     }
 
-    const [ html, video ] = await Promise.all([
+    const [ html, video, videoFile ] = await Promise.all([
       ClientHtml.getIndexHTML(req, res),
-      VideoModel.loadWithBlacklist(videoId)
+      VideoModel.loadWithBlacklist(videoId),
+      VideoModel.loadWithFiles(videoId)
     ])
 
     // Let Angular application handle errors
@@ -90,8 +92,14 @@ export class ClientHtml {
       return html
     }
 
+    const [ files, thumbnail ] = await Promise.all([
+      videoFile.getFormattedVideoFilesJSON(),
+      video.getMiniatureStaticPath()
+    ])
+
     let customHtml = ClientHtml.addTitleTag(html, escapeHTML(video.name))
     customHtml = ClientHtml.addDescriptionTag(customHtml, escapeHTML(video.description))
+    customHtml = ClientHtml.addNoJSPlayer(customHtml, files, thumbnail, escapeHTML(video.name), escapeHTML(video.description))
 
     const url = WEBSERVER.URL + video.getWatchStaticPath()
     const title = escapeHTML(video.name)
@@ -311,6 +319,24 @@ export class ClientHtml {
     const styleTag = `<style class="custom-css-style">${CONFIG.INSTANCE.CUSTOMIZATIONS.CSS}</style>`
 
     return htmlStringPage.replace(CUSTOM_HTML_TAG_COMMENTS.CUSTOM_CSS, styleTag)
+  }
+  
+  private static addNoJSPlayer (htmlStringPage: string, files?: object, thumbnail?: string, title?: string, description?: string) {
+    const highestResolutionUrl = files[0].fileUrl
+    let resolutions = "Quality:"
+    for (var file in files) {
+      if (!files[file].fileUrl.includes("fragmented")){
+        resolutions += " <a href=\"" + files[file].fileUrl +"\">" + files[file].resolution.label + "</a>"
+      }
+    }
+ 
+    const nojsPlayer = `<center><video src="${highestResolutionUrl}" poster="${thumbnail}" controls>
+ 	Unfortunately your browser does not support the video tag.</video>
+    <p>${resolutions}</p></center>
+    <h3>${title}</h3>
+    <p>${description}</p>`
+ 
+    return htmlStringPage.replace(CUSTOM_HTML_PLAYER_COMMENTS.NOJS_PLAYER, nojsPlayer)
   }
 
   private static async addAsyncPluginCSS (htmlStringPage: string) {

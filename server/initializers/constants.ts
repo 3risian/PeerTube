@@ -666,6 +666,10 @@ const CUSTOM_HTML_TAG_COMMENTS = {
   META_TAGS: '<!-- meta tags -->'
 }
 
+const CUSTOM_HTML_PLAYER_COMMENTS = {
+  NOJS_PLAYER: '<!-- NoJS player -->'
+}
+
 // ---------------------------------------------------------------------------
 
 const FEEDS = {
@@ -795,6 +799,7 @@ export {
   LAST_MIGRATION_VERSION,
   OAUTH_LIFETIME,
   CUSTOM_HTML_TAG_COMMENTS,
+  CUSTOM_HTML_PLAYER_COMMENTS,
   BROADCAST_CONCURRENCY,
   AUDIT_LOG_FILENAME,
   PAGINATION,
